@@ -18,6 +18,9 @@ export const metadata: Metadata = {
   title: "PortoFlux — Developer Portfolio",
   description:
     "Personal portfolio of a website & mobile developer. Full-stack development for web and mobile with 5+ years of production experience.",
+    icons: {
+      icon: '/logo.svg', 
+    },
 };
 
 export default function RootLayout({

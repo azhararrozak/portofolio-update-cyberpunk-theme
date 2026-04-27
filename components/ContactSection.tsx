@@ -72,7 +72,7 @@ export default function ContactSection() {
                       <path d="M20.45 20.45h-3.56v-5.57c0-1.33-.02-3.03-1.85-3.03-1.85 0-2.13 1.44-2.13 2.94v5.66H9.35V9h3.42v1.56h.05c.48-.9 1.64-1.85 3.38-1.85 3.62 0 4.28 2.38 4.28 5.47v6.27zM5.34 7.43a2.07 2.07 0 1 1 0-4.14 2.07 2.07 0 0 1 0 4.14zM7.12 20.45H3.55V9h3.57v11.45z" />
                     </svg>
                   ),
-                  iconCls: "bg-cyan text-ink", label: "LinkedIn", value: "/in/ayla-nakamura",
+                  iconCls: "bg-cyan text-ink", label: "LinkedIn", value: "/in/azhar-arrozak",
                 },
               ].map((item) => (
                 <a

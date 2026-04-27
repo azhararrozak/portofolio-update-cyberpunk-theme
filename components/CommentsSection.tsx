@@ -5,7 +5,7 @@ import { useState } from "react";
 const reviews = [
   {
     stars: 5, initials: "MR", color: "bg-red text-white",
-    body: "Ayla shipped our storefront two weeks ahead of schedule. The code was clean, the animations were tight, and the team actually understood Git. Rare.",
+    body: "Azhar shipped our storefront two weeks ahead of schedule. The code was clean, the animations were tight, and the team actually understood Git. Rare.",
     name: "Maya Rohmann", role: "CEO · NeonShop",
   },
   {

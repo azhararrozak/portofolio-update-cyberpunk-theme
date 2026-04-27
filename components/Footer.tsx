@@ -17,7 +17,7 @@ export default function Footer() {
               </span>
             </a>
             <p className="text-white/[0.55] text-[13px] leading-[1.7] mt-4">
-              Personal portfolio of Ayla Nakamura — website &amp; mobile developer based in Jakarta,
+              Personal portfolio of Azhar Arrozak — website &amp; mobile developer based in Tegal, Central Java Indonesia,
               available worldwide.
             </p>
           </div>
@@ -65,17 +65,17 @@ export default function Footer() {
             <ul className="list-none p-0 m-0 flex flex-col gap-2.5">
               <li>
                 <a className="text-white/70 text-[13px] transition-colors duration-200 hover:text-cyan cursor-pointer">
-                  hello@portoflux.dev
+                  azhararrozak@satudev.id
                 </a>
               </li>
               <li>
                 <a className="text-white/70 text-[13px] transition-colors duration-200 hover:text-cyan cursor-pointer">
-                  +62 811 4242 042
+                  +62 822 4198 6504
                 </a>
               </li>
               <li>
                 <a className="text-white/70 text-[13px] transition-colors duration-200 hover:text-cyan cursor-pointer">
-                  Jakarta · UTC+7
+                  Tegal, Indonesia · UTC+7
                 </a>
               </li>
             </ul>

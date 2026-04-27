@@ -1,6 +1,16 @@
 "use client";
 
 import { useRef, useEffect, useState, useCallback } from "react";
+import { useGlitch, GlitchHandle } from "react-powerglitch";
+import {
+  motion,
+  useMotionValue,
+  useSpring,
+  useTransform,
+  type Variants,
+} from "framer-motion";
+
+/* ────────── helpers ────────── */
 
 /** Format seconds → MM:SS */
 function fmtTime(seconds: number): string {
@@ -9,9 +19,144 @@ function fmtTime(seconds: number): string {
   return `${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
 }
 
+/* ────────── shared animation variants ────────── */
+
+const fadeUp: Variants = {
+  hidden: { opacity: 0, y: 40, filter: "blur(6px)" },
+  visible: (i: number = 0) => ({
+    opacity: 1,
+    y: 0,
+    filter: "blur(0px)",
+    transition: { duration: 0.7, ease: [0.22, 1, 0.36, 1], delay: i * 0.12 },
+  }),
+};
+
+const fadeLeft: Variants = {
+  hidden: { opacity: 0, x: -50, filter: "blur(4px)" },
+  visible: (i: number = 0) => ({
+    opacity: 1,
+    x: 0,
+    filter: "blur(0px)",
+    transition: { duration: 0.7, ease: [0.22, 1, 0.36, 1], delay: i * 0.12 },
+  }),
+};
+
+const scaleIn: Variants = {
+  hidden: { opacity: 0, scale: 0.88, filter: "blur(8px)" },
+  visible: {
+    opacity: 1,
+    scale: 1,
+    filter: "blur(0px)",
+    transition: { duration: 0.8, ease: [0.22, 1, 0.36, 1] },
+  },
+};
+
+/* ────────── MagneticButton (cursor-follow effect) ────────── */
+
+function MagneticButton({
+  children,
+  className,
+}: {
+  children: React.ReactNode;
+  className?: string;
+}) {
+  const ref = useRef<HTMLButtonElement>(null);
+
+  const x = useMotionValue(0);
+  const y = useMotionValue(0);
+
+  const springX = useSpring(x, { stiffness: 250, damping: 20 });
+  const springY = useSpring(y, { stiffness: 250, damping: 20 });
+
+  // Slight rotation for extra depth
+  const rotateX = useTransform(springY, [-20, 20], [6, -6]);
+  const rotateY = useTransform(springX, [-20, 20], [-6, 6]);
+
+  const handleMouse = useCallback(
+    (e: React.MouseEvent<HTMLButtonElement>) => {
+      const el = ref.current;
+      if (!el) return;
+      const rect = el.getBoundingClientRect();
+      const cx = rect.left + rect.width / 2;
+      const cy = rect.top + rect.height / 2;
+      x.set((e.clientX - cx) * 0.35);
+      y.set((e.clientY - cy) * 0.35);
+    },
+    [x, y],
+  );
+
+  const handleLeave = useCallback(() => {
+    x.set(0);
+    y.set(0);
+  }, [x, y]);
+
+  return (
+    <motion.button
+      ref={ref}
+      className={className}
+      style={{ x: springX, y: springY, rotateX, rotateY }}
+      onMouseMove={handleMouse}
+      onMouseLeave={handleLeave}
+      whileTap={{ scale: 0.95 }}
+    >
+      {children}
+    </motion.button>
+  );
+}
+
+/* Dynamic Data */
+const yearExp = new Date().getFullYear() - 2024;
+
+/* ────────── HeroSection ────────── */
+
 export default function HeroSection() {
   const videoRef = useRef<HTMLVideoElement>(null);
   const sectionRef = useRef<HTMLElement>(null);
+
+  // Glitch for "Code." — triggers early in the cycle
+  const glitchCode: GlitchHandle = useGlitch({
+    glitchTimeSpan: { start: 0.1, end: 0.25 },
+    shake: { velocity: 15, amplitudeX: 0.04, amplitudeY: 0.06 },
+    slice: {
+      count: 5,
+      velocity: 10,
+      minHeight: 0.02,
+      maxHeight: 0.15,
+      hueRotate: true,
+    },
+    pulse: false,
+    timing: { duration: 4000, iterations: Infinity },
+  });
+
+  // Glitch for "Build." — triggers mid-cycle
+  const glitchBuild: GlitchHandle = useGlitch({
+    glitchTimeSpan: { start: 0.4, end: 0.55 },
+    shake: { velocity: 10, amplitudeX: 0.03, amplitudeY: 0.04 },
+    slice: {
+      count: 3,
+      velocity: 8,
+      minHeight: 0.03,
+      maxHeight: 0.1,
+      hueRotate: true,
+    },
+    pulse: false,
+    timing: { duration: 5000, iterations: Infinity },
+  });
+
+  // Glitch for "Ship." — triggers late in the cycle
+  const glitchShip: GlitchHandle = useGlitch({
+    glitchTimeSpan: { start: 0.65, end: 0.8 },
+    shake: { velocity: 18, amplitudeX: 0.05, amplitudeY: 0.07 },
+    slice: {
+      count: 6,
+      velocity: 12,
+      minHeight: 0.01,
+      maxHeight: 0.2,
+      hueRotate: true,
+    },
+    pulse: false,
+    timing: { duration: 3500, iterations: Infinity },
+  });
 
   const [duration, setDuration] = useState("00:00");
   const [currentTime, setCurrentTime] = useState("00:00");
@@ -33,7 +178,7 @@ export default function HeroSection() {
           setIsPlaying(false);
         }
       },
-      { threshold: 0.15 }
+      { threshold: 0.15 },
     );
 
     observer.observe(section);
@@ -77,7 +222,10 @@ export default function HeroSection() {
   }, []);
 
   return (
-    <section ref={sectionRef} className="bg-red text-paper relative overflow-hidden">
+    <section
+      ref={sectionRef}
+      className="bg-red text-paper relative overflow-hidden"
+    >
       {/* Radial overlays */}
       <div
         className="absolute inset-0 pointer-events-none"
@@ -88,17 +236,29 @@ export default function HeroSection() {
       />
 
       <div className="max-w-[1440px] mx-auto px-10">
-        {/* Meta bar */}
-        <div className="flex justify-between font-mono text-[11px] text-white/70 tracking-[0.14em] py-4 border-b border-white/15 relative z-2">
+        {/* Meta bar — slide down */}
+        <motion.div
+          variants={fadeUp}
+          initial="hidden"
+          whileInView="visible"
+          viewport={{ once: true, amount: 0.5 }}
+          className="flex justify-between font-mono text-[11px] text-white/70 tracking-[0.14em] py-4 border-b border-white/15 relative z-2"
+        >
           <span>~/portoflux/home.tsx</span>
           <span>LAT -6.2° · LON 106.8° · UTC+7</span>
           <span className="text-cyan">● AVAILABLE FOR Q2 2026</span>
-        </div>
+        </motion.div>
 
         {/* Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-[1.3fr_1fr] gap-14 items-center py-20 lg:pb-[100px] relative z-2">
-          {/* Visual */}
-          <div className="relative aspect-[4/3] bg-red rounded overflow-hidden">
+          {/* Visual — scale-in reveal */}
+          <motion.div
+            variants={scaleIn}
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true, amount: 0.2 }}
+            className="relative aspect-[4/3] bg-red rounded overflow-hidden"
+          >
             {/* Typing Video — autoplay, looped, muted for browser policy */}
             <video
               ref={videoRef}
@@ -130,8 +290,20 @@ export default function HeroSection() {
               <span className="w-11 h-11 rounded-full bg-cyan grid place-items-center text-ink transition-transform duration-200 hover:scale-105">
                 {isPlaying ? (
                   <svg width="16" height="16" viewBox="0 0 24 24">
-                    <rect x="6" y="5" width="4" height="14" fill="currentColor" />
-                    <rect x="14" y="5" width="4" height="14" fill="currentColor" />
+                    <rect
+                      x="6"
+                      y="5"
+                      width="4"
+                      height="14"
+                      fill="currentColor"
+                    />
+                    <rect
+                      x="14"
+                      y="5"
+                      width="4"
+                      height="14"
+                      fill="currentColor"
+                    />
                   </svg>
                 ) : (
                   <svg width="16" height="16" viewBox="0 0 24 24">
@@ -143,26 +315,71 @@ export default function HeroSection() {
                 {isPlaying ? "PAUSE" : "PLAY"} SHOWREEL · {duration}
               </span>
             </button>
-          </div>
+          </motion.div>
 
           {/* Text */}
           <div className="relative">
-            <div className="inline-flex gap-2.5 items-center px-3.5 py-[7px] bg-white/[0.14] border border-white/25 rounded-full font-mono text-[11px] tracking-[0.18em] uppercase mb-[22px]">
+            {/* Badge — fade left */}
+            <motion.div
+              variants={fadeLeft}
+              initial="hidden"
+              whileInView="visible"
+              viewport={{ once: true, amount: 0.5 }}
+              className="inline-flex gap-2.5 items-center px-3.5 py-[7px] bg-white/[0.14] border border-white/25 rounded-full font-mono text-[11px] tracking-[0.18em] uppercase mb-[22px]"
+            >
               <span className="w-2 h-2 rounded-full bg-cyan shadow-[0_0_10px_var(--color-cyan)] animate-[pulse-dot_1.6s_infinite]" />
               Available for freelance
-            </div>
+            </motion.div>
 
+            {/* Heading — staggered words */}
             <h1 className="font-[Orbitron] font-extrabold text-[clamp(44px,5.2vw,78px)] leading-[0.95] tracking-[-0.01em] text-white mb-3">
-              Code.
+              <motion.span
+                variants={fadeUp}
+                custom={0}
+                initial="hidden"
+                whileInView="visible"
+                viewport={{ once: true }}
+                ref={glitchCode.ref}
+                className="inline-block"
+              >
+                Code.
+              </motion.span>
               <br />
-              <span className="text-cyan">Build.</span>
+              <motion.span
+                variants={fadeUp}
+                custom={1}
+                initial="hidden"
+                whileInView="visible"
+                viewport={{ once: true }}
+                ref={glitchBuild.ref}
+                className="inline-block text-cyan"
+              >
+                Build.
+              </motion.span>
               <br />
-              <span className="text-transparent" style={{ WebkitTextStroke: "2px #fff" }}>
+              <motion.span
+                variants={fadeUp}
+                custom={2}
+                initial="hidden"
+                whileInView="visible"
+                viewport={{ once: true }}
+                ref={glitchShip.ref}
+                className="inline-block text-transparent"
+                style={{ WebkitTextStroke: "2px #fff" }}
+              >
                 Ship.
-              </span>
+              </motion.span>
             </h1>
 
-            <div className="flex flex-col gap-2 my-[22px] py-[18px] border-t border-b border-white/20">
+            {/* Role list — staggered */}
+            <motion.div
+              variants={fadeUp}
+              custom={3}
+              initial="hidden"
+              whileInView="visible"
+              viewport={{ once: true }}
+              className="flex flex-col gap-2 my-[22px] py-[18px] border-t border-b border-white/20"
+            >
               <div className="flex items-center gap-3 font-mono text-[15px] text-white tracking-[0.04em]">
                 <span className="text-cyan w-6">01</span>Website Developer
                 <span className="text-white/60 ml-auto">→</span>
@@ -171,47 +388,79 @@ export default function HeroSection() {
                 <span className="text-cyan w-6">02</span>Mobile Developer
                 <span className="text-white/60 ml-auto">→</span>
               </div>
-            </div>
+            </motion.div>
 
-            <p className="text-white/85 text-[15px] leading-[1.7] max-w-[480px] mb-7">
-              Hi, I&apos;m <b>Ayla Nakamura</b> — a developer based in Jakarta building polished
-              interfaces for web and mobile. 5+ years shipping products for startups, agencies, and
-              the occasional wild idea.
-            </p>
+            {/* Bio */}
+            <motion.p
+              variants={fadeUp}
+              custom={4}
+              initial="hidden"
+              whileInView="visible"
+              viewport={{ once: true }}
+              className="text-white/85 text-[15px] leading-[1.7] max-w-[480px] mb-7 justify-center items-center text-justify"
+            >
+              Hi, I&apos;m <b>Azhar Arrozak</b> — a Mobile and Web Developer
+              based in Tegal, Central Java Indonesia. I specialize in building
+              robust, cross-platform applications and polished user interfaces.
+              With {yearExp}+ years of experience webs and mobile, I am driven by the
+              philosophy:<br />{" "}
+              <em>&quot;Learn to Teach More, Teach to Learn more.&quot;</em>
+            </motion.p>
 
-            <div className="flex gap-3 flex-wrap">
-              <button className="inline-flex gap-2.5 items-center px-[26px] py-4 bg-ink text-paper border-0 rounded-[3px] font-sans text-sm font-semibold tracking-[0.08em] uppercase transition-all duration-200 hover:bg-cyan hover:text-ink hover:-translate-y-0.5 hover:shadow-[0_10px_24px_rgba(0,0,0,0.25)]">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            {/* CTA Buttons — magnetic cursor + fade-up */}
+            <motion.div
+              variants={fadeUp}
+              custom={5}
+              initial="hidden"
+              whileInView="visible"
+              viewport={{ once: true }}
+              className="flex gap-3 flex-wrap"
+            >
+              <MagneticButton className="inline-flex gap-2.5 items-center px-[26px] py-4 bg-ink text-paper border-0 rounded-[3px] font-sans text-sm font-semibold tracking-[0.08em] uppercase cursor-pointer transition-all duration-200 hover:bg-cyan hover:text-ink hover:shadow-[0_10px_24px_rgba(0,0,0,0.25)]">
+                <svg
+                  width="16"
+                  height="16"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                >
                   <path d="M12 3 V15 M6 11 L12 17 L18 11 M4 21 H20" />
                 </svg>
                 Download CV
-              </button>
-              <button className="inline-flex gap-2.5 items-center px-6 py-4 bg-transparent text-white border-[1.5px] border-white rounded-[3px] text-sm font-semibold tracking-[0.08em] uppercase transition-colors duration-200 hover:bg-white hover:text-red">
+              </MagneticButton>
+              <MagneticButton className="inline-flex gap-2.5 items-center px-6 py-4 bg-transparent text-white border-[1.5px] border-white rounded-[3px] text-sm font-semibold tracking-[0.08em] uppercase cursor-pointer transition-colors duration-200 hover:bg-white hover:text-red">
                 Let&apos;s Talk →
-              </button>
-            </div>
+              </MagneticButton>
+            </motion.div>
 
+            {/* Stats — staggered counters */}
             <div className="grid grid-cols-3 gap-6 mt-9">
-              <div className="flex flex-col gap-1">
-                <span className="font-[Orbitron] font-extrabold text-4xl text-white">
-                  05<span className="text-cyan">+</span>
-                </span>
-                <span className="font-mono text-[11px] text-white/70 tracking-[0.16em] uppercase">
-                  Years Exp
-                </span>
-              </div>
-              <div className="flex flex-col gap-1">
-                <span className="font-[Orbitron] font-extrabold text-4xl text-white">42</span>
-                <span className="font-mono text-[11px] text-white/70 tracking-[0.16em] uppercase">
-                  Projects
-                </span>
-              </div>
-              <div className="flex flex-col gap-1">
-                <span className="font-[Orbitron] font-extrabold text-4xl text-white">18</span>
-                <span className="font-mono text-[11px] text-white/70 tracking-[0.16em] uppercase">
-                  Clients
-                </span>
-              </div>
+              {[
+                { value: `${yearExp}`, suffix: "+", label: "Years Exp" },
+                { value: "5", suffix: "", label: "Projects" },
+                { value: "5", suffix: "", label: "Clients" },
+              ].map((stat, i) => (
+                <motion.div
+                  key={stat.label}
+                  variants={fadeUp}
+                  custom={6 + i}
+                  initial="hidden"
+                  whileInView="visible"
+                  viewport={{ once: true }}
+                  className="flex flex-col gap-1"
+                >
+                  <span className="font-[Orbitron] font-extrabold text-4xl text-white">
+                    {stat.value}
+                    {stat.suffix && (
+                      <span className="text-cyan">{stat.suffix}</span>
+                    )}
+                  </span>
+                  <span className="font-mono text-[11px] text-white/70 tracking-[0.16em] uppercase">
+                    {stat.label}
+                  </span>
+                </motion.div>
+              ))}
             </div>
           </div>
         </div>
