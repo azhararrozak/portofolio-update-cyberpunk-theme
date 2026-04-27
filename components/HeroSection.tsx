@@ -1,14 +1,17 @@
 "use client";
 
 import { useRef, useEffect, useState, useCallback } from "react";
+import { createPortal } from "react-dom";
 import { useGlitch, GlitchHandle } from "react-powerglitch";
 import {
   motion,
+  AnimatePresence,
   useMotionValue,
   useSpring,
   useTransform,
   type Variants,
 } from "framer-motion";
+import Image from "next/image";
 
 /* ────────── helpers ────────── */
 
@@ -101,6 +104,138 @@ function MagneticButton({
     >
       {children}
     </motion.button>
+  );
+}
+
+/* ────────── CursorRevealName (hover → photo follows cursor) ────────── */
+
+function CursorRevealPhoto({ isVisible, springX, springY, children }: {
+  isVisible: boolean;
+  springX: ReturnType<typeof useSpring>;
+  springY: ReturnType<typeof useSpring>;
+  children: React.ReactNode;
+}) {
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => { setMounted(true); }, []);
+
+  if (!mounted) return null;
+
+  return createPortal(
+    <AnimatePresence>
+      {isVisible && (
+        <motion.div
+          className="fixed top-0 left-0 pointer-events-none"
+          style={{
+            x: springX,
+            y: springY,
+            zIndex: 9999,
+            translateX: "-50%",
+            translateY: "-110%",
+          }}
+          initial={{ opacity: 0, scale: 0.5, rotate: -8 }}
+          animate={{ opacity: 1, scale: 1, rotate: 0 }}
+          exit={{ opacity: 0, scale: 0.5, rotate: 8 }}
+          transition={{
+            type: "spring",
+            stiffness: 350,
+            damping: 25,
+            mass: 0.6,
+          }}
+        >
+          <div className="relative w-[160px] h-[200px] rounded-lg overflow-hidden border-2 border-cyan"
+            style={{ boxShadow: "0 0 25px rgba(0,255,255,0.3), 0 0 60px rgba(0,255,255,0.1)" }}
+          >
+            <Image
+              src="/profile-azhar.png"
+              alt="Azhar Arrozak"
+              fill
+              className="object-cover"
+              sizes="160px"
+              priority
+            />
+            {/* Scanline overlay */}
+            <div
+              className="absolute inset-0 pointer-events-none opacity-20"
+              style={{
+                background:
+                  "repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,255,255,0.06) 2px, rgba(0,255,255,0.06) 4px)",
+              }}
+            />
+            {/* Bottom label */}
+            <div className="absolute bottom-0 inset-x-0 bg-gradient-to-t from-black/80 to-transparent py-2 px-3">
+              <span className="font-mono text-[10px] text-cyan tracking-[0.16em] uppercase">
+                {children}
+              </span>
+            </div>
+          </div>
+        </motion.div>
+      )}
+    </AnimatePresence>,
+    document.body,
+  );
+}
+
+function CursorRevealName({ children }: { children: React.ReactNode }) {
+  const [isHovered, setIsHovered] = useState(false);
+
+  // Raw cursor coordinates (viewport-relative)
+  const cursorX = useMotionValue(0);
+  const cursorY = useMotionValue(0);
+
+  // Smooth spring-based following
+  const springX = useSpring(cursorX, { stiffness: 300, damping: 28, mass: 0.5 });
+  const springY = useSpring(cursorY, { stiffness: 300, damping: 28, mass: 0.5 });
+
+  const handleMouseMove = useCallback(
+    (e: React.MouseEvent) => {
+      cursorX.set(e.clientX);
+      cursorY.set(e.clientY);
+    },
+    [cursorX, cursorY],
+  );
+
+  const handleEnter = useCallback(
+    (e: React.MouseEvent) => {
+      // Seed position so image doesn't teleport from (0,0)
+      cursorX.set(e.clientX);
+      cursorY.set(e.clientY);
+      springX.jump(e.clientX);
+      springY.jump(e.clientY);
+      setIsHovered(true);
+    },
+    [cursorX, cursorY, springX, springY],
+  );
+
+  const handleLeave = useCallback(() => {
+    setIsHovered(false);
+  }, []);
+
+  return (
+    <>
+      <b
+        onMouseMove={handleMouseMove}
+        onMouseEnter={handleEnter}
+        onMouseLeave={handleLeave}
+        className="relative cursor-none text-cyan transition-colors duration-300 hover:text-white"
+        style={{ zIndex: 10 }}
+      >
+        {/* Underline glow */}
+        <span className="relative">
+          {children}
+          <motion.span
+            className="absolute -bottom-[2px] left-0 h-[2px] bg-cyan origin-left"
+            initial={{ scaleX: 0 }}
+            animate={{ scaleX: isHovered ? 1 : 0 }}
+            transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
+          />
+        </span>
+      </b>
+
+      {/* Floating photo — portaled to body to avoid p > div hydration error */}
+      <CursorRevealPhoto isVisible={isHovered} springX={springX} springY={springY}>
+        {children}
+      </CursorRevealPhoto>
+    </>
   );
 }
 
@@ -399,11 +534,13 @@ export default function HeroSection() {
               viewport={{ once: true }}
               className="text-white/85 text-[15px] leading-[1.7] max-w-[480px] mb-7 justify-center items-center text-justify"
             >
-              Hi, I&apos;m <b>Azhar Arrozak</b> — a Mobile and Web Developer
-              based in Tegal, Central Java Indonesia. I specialize in building
-              robust, cross-platform applications and polished user interfaces.
-              With {yearExp}+ years of experience webs and mobile, I am driven by the
-              philosophy:<br />{" "}
+              Hi, I&apos;m{" "}
+              <CursorRevealName>Azhar Arrozak</CursorRevealName> — a Mobile and
+              Web Developer based in Tegal, Central Java Indonesia. I specialize
+              in building robust, cross-platform applications and polished user
+              interfaces. With {yearExp}+ years of experience webs and mobile, I
+              am driven by the philosophy:
+              <br />{" "}
               <em>&quot;Learn to Teach More, Teach to Learn more.&quot;</em>
             </motion.p>
 
